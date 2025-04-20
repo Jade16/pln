@@ -1,0 +1,5 @@
+.*
+!.gitignore
+
+__pycache__
+b2w.csv
