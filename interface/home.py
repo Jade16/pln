@@ -22,7 +22,6 @@ html, body, .main, .block-container {
     flex-direction: column;
     align-items: center;
     box-shadow: none;
-    /* Remove sombra para manter minimalismo */
 }
 .pln-title {
     font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
@@ -97,7 +96,7 @@ html, body, .main, .block-container {
     letter-spacing: 0.11px;
     font-weight: 300;
 }
-/* DARK MODE: usa media query para personalizar para dark */
+
 @media (prefers-color-scheme: dark) {
     html, body, .main, .block-container {
         --background-color: #111418;
@@ -123,7 +122,7 @@ html, body, .main, .block-container {
 st.markdown(
     """
     <div class="pln-mainbox">
-        <div class="pln-title">Processamento de Linguagem Natural</div>
+        <div class="pln-title">Polar Minds</div>
         <div class="pln-inst">
             Universidade de São Paulo<br>
             Instituto de Ciências Matemáticas e de Computação

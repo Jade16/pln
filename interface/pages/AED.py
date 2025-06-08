@@ -1,4 +1,3 @@
-# === BIBLIOTECAS ===
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -14,17 +13,17 @@ from nltk.tokenize import word_tokenize
 from collections import Counter
 from wordcloud import WordCloud
 
-# === CONFIGURAÇÃO DA PÁGINA ===
-st.set_page_config(page_title="Análise Exploratória", layout="wide")
+# === Configurações de Página ===
+st.set_page_config(page_title="Análise Exploratória", layout="wide", page_icon=":books:")
 st.markdown("<h1 style='text-align: center; color: #264653;'>Análise Exploratória de Dados</h1>", unsafe_allow_html=True)
 st.divider()
 
-# === FUNÇÕES DE CACHE ===
+# === Funções ===
 @st.cache_data(show_spinner=False)
-def load_base():
+def load_dataframe():
     df = pd.read_csv("data/b2w.csv")
     df = df.dropna(subset=["polarity"]).reset_index(drop=True)
-    # Seleção de colunas
+    # Seleção de Colunas
     if "review_text_processed" in df.columns:
         df["review_length"] = df["review_text_processed"].str.split().apply(len)
         df["text_len"] = df["review_text_processed"].str.len()
@@ -40,10 +39,10 @@ def load_base():
         df["num_tokens"] = np.nan
     return df
 
-df = load_base()
+df = load_dataframe()
 
 # === TABS ===
-abas = st.tabs([
+tabs = st.tabs([
     "📄  Base de Dados",
     "📊 Estatísticas Gerais",
     "💬 Frequência de Palavras",
@@ -52,10 +51,10 @@ abas = st.tabs([
     "🔠 N-Gramas"
 ])
 
-# === TAB 1: Base de Dados ===
-with abas[0]:
+# === Base de Dados ===
+with tabs[0]:
     st.subheader("Visualização da Base")
-    st.dataframe(df.head(500), use_container_width=True)  # Seleção de amostra
+    st.dataframe(df.head(500), use_container_width=True)
     st.divider()
 
     st.subheader("Informações da Tabela")
@@ -68,8 +67,8 @@ with abas[0]:
     })
     st.dataframe(info_df, use_container_width=True)
 
-# === TAB 2: Estatísticas Gerais ===
-with abas[1]:
+# === Estatísticas Gerais ===
+with tabs[1]:
     st.subheader("Estatísticas Descritivas")
     st.dataframe(df.describe().round(2), use_container_width=True)
     st.divider()
@@ -105,8 +104,8 @@ with abas[1]:
         fig.update_layout(plot_bgcolor='rgba(0,0,0,0)')
         st.plotly_chart(fig, use_container_width=True)
 
-# === TAB 3: Frequência de Palavras ===
-with abas[2]:
+# === Frequência de Palavras ===
+with tabs[2]:
     st.subheader("Palavras mais Frequentes")
     sample_text = " ".join(df['review_text'].astype(str).sample(min(len(df), 5000), random_state=0)).lower()
     tokens = re.findall(r'\b\w+\b', sample_text)
@@ -130,8 +129,8 @@ with abas[2]:
     least_common = sorted(Counter(tokens3).items(), key=lambda x: x[1])[:20]
     st.dataframe(pd.DataFrame(least_common, columns=["Palavra", "Frequência"]), use_container_width=True)
 
-# === TAB 4: Nuvens de Palavras ===
-with abas[3]:
+# === Wordcloud ===
+with tabs[3]:
     st.subheader("Nuvens de Palavras por Sentimento")
 
     def generate_wordcloud(text):
@@ -154,8 +153,8 @@ with abas[3]:
         st.markdown("##### Reviews Negativas")
         st.pyplot(generate_wordcloud(" ".join(neg_reviews.sample(min(n_wc, len(neg_reviews)), random_state=1))))
 
-# === TAB 5: Análises por Rating/Polaridade ===
-with abas[4]:
+# === Rating/Polaridade ===
+with tabs[4]:
     st.subheader("Distribuição de Tokens por Rating")
     if "tokens" in df.columns and "num_tokens" in df.columns:
         fig = px.box(df, x='rating', y='num_tokens', color='rating', points="all", color_discrete_sequence=px.colors.sequential.Viridis)
@@ -207,11 +206,11 @@ with abas[4]:
     st.subheader("Comprimento do Texto vs. Sentimento")
     if "text_len" in df.columns:
         fig = px.scatter(df, x='text_len', y='rating', color='polarity', color_continuous_scale='viridis', opacity=0.6)
-        fig.update_layout(title_x=0.5, plot_bgcolor='rgba(0,0,0,0)')
+        fig.update_layout(title="", title_x=0.5, plot_bgcolor='rgba(0,0,0,0)')
         st.plotly_chart(fig, use_container_width=True)
 
-# === TAB 6: N-Gramas ===
-with abas[5]:
+# === N-grams ===
+with tabs[5]:
     try:
         nltk.data.find('tokenizers/punkt')
     except LookupError:
