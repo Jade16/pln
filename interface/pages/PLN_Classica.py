@@ -1,4 +1,3 @@
-# === BIBLIOTECAS ===
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -7,42 +6,41 @@ import spacy
 import plotly.express as px
 import spacy_streamlit
 
-# === CONFIGURAÇÃO DA PÁGINA ===
-st.set_page_config(page_title="PLN Clássica", layout="wide")
+# === Configurações da Página ===
+st.set_page_config(page_title="PLN Clássica", layout="wide", page_icon=":books:")
 st.markdown("<h1 style='text-align: center; color: #264653;'>PLN Clássica </h1>", unsafe_allow_html=True)
 st.divider()
 
-# === LEITURA DOS ARQUIVOS PRÉ-PROCESSADOS ===
+# === Leitura dos arquivos ===
 @st.cache_data
-def load_data():
-    df = pd.read_csv("weights/dataset_all.csv")
-    return df
+def load_dataframe():
+    return pd.read_csv("models_results/part_1/dataset_all.csv")
 
-df = load_data()
+df = load_dataframe()
 
 @st.cache_data
 def load_pos_tags():
-    return pd.read_csv("weights/pos_tags.csv")
+    return pd.read_csv("models_results/part_1/pos_tags.csv")
 
 @st.cache_data
 def load_dep_parse():
-    return pd.read_csv("weights/dep_parse.csv")
+    return pd.read_csv("models_results/part_1/dep_parse.csv")
 
 @st.cache_data
 def load_sentilex():
-    return pd.read_csv("weights/sentilex.csv")
+    return pd.read_csv("models_results/part_1/sentilex.csv")
 
 sentilex_df = load_sentilex()
 sentilex = dict(zip(sentilex_df["Palavra"].str.lower(), sentilex_df["Polaridade"]))
 
-# === MODELO SPACY ===
+# === Modelo SpaCy ===
 @st.cache_resource
 def load_spacy_model():
     return spacy.load("pt_core_news_sm")
 
 nlp = load_spacy_model()
 
-# === FUNÇÃO DE ANÁLISE SEMÂNTICA ===
+# === Análise Semântica ===
 def semantic_sentiment(text):
     doc = nlp(text)
     intensifiers = [token.text.lower() for token in doc if token.pos_ == "ADV" and token.dep_ in ("advmod", "intj")]
@@ -70,8 +68,8 @@ def semantic_sentiment(text):
         negation = False if token.dep_ in ("punct", "cc") else negation
     return total_score / len(doc) if len(doc) > 0 else 0
 
-# === ABAS ===
-abas = st.tabs([
+# === TABS ===
+tabs = st.tabs([
     "📄 Base de Dados",
     "🔤 Análise Morfológica",
     "🌐 Análise Sintática",
@@ -79,14 +77,14 @@ abas = st.tabs([
     "✍️ Análise Personalizada"
 ])
 
-# === ABA: BASE DE DADOS ===
-with abas[0]:
+# === Base de Dados ===
+with tabs[0]:
     st.subheader("Base de Dados")
     st.dataframe(df[["review_text", "review_text_clean", "review_text_tokenized", "hybrid_sentiment"]].sample(10), use_container_width=True)
     st.divider()
 
-# === ABA: POS-TAGS ===
-with abas[1]:
+# === Pos-Tags ===
+with tabs[1]:
     st.subheader("Frequência de POS-Tags")
     pos_df = load_pos_tags()
     fig = px.bar(pos_df, x="POS", y="Freq", text="Percent", color_discrete_sequence=["#2596FF"])
@@ -102,8 +100,8 @@ with abas[1]:
         st.dataframe(pd.DataFrame(data, columns=["Token", "Classe Gramatical"]), use_container_width=True)
         st.markdown("---")
 
-# === ABA: DEPENDÊNCIAS ===
-with abas[2]:
+# === Dependência Sintática ===
+with tabs[2]:
     st.subheader("Frequência de Dependências Sintáticas")
     dep_df = load_dep_parse()
     fig = px.bar(dep_df.head(20), x="Dep", y="Freq", text="Percent", color_discrete_sequence=["#2596FF"])
@@ -121,8 +119,8 @@ with abas[2]:
         st.dataframe(pd.DataFrame(data, columns=["Token", "Dependência", "Palavra Raiz"]), use_container_width=True)
         st.markdown("---")
 
-# === ABA: SENTIMENTO ===
-with abas[3]:
+# === Distribuição de Sentimentos  ===
+with tabs[3]:
     st.subheader("Distribuição de Sentimento")
     sent_counts = df["hybrid_sentiment"].value_counts().rename_axis("Sentimento").reset_index(name="Contagem")
     fig = px.bar(sent_counts, x="Sentimento", y="Contagem", text="Contagem", color_discrete_sequence=["#2596FF"])
@@ -136,21 +134,33 @@ with abas[3]:
         st.write(f"**Sentimento:** {row['hybrid_sentiment']} | **Score:** {row['score']:.2f}")
         st.markdown("---")
 
-# === ABA: ANÁLISE PERSONALIZADA ===
-with abas[4]:
-    st.subheader("Análise de Frase do Usuário")
-    user_input = st.text_area("Digite uma frase:")
-    if user_input:
-        doc = nlp(user_input)
-        with st.expander("Árvore de Dependência da Frase"):
-            spacy_streamlit.visualize_parser(doc, title="Parser", key="parser_input")
-        score = semantic_sentiment(user_input)
-        st.write(f"**Score:** {score:.2f}")
-        if score > 0.1:
-            sentiment = "Positivo"; stars = "⭐⭐⭐⭐⭐"
-        elif score < -0.1:
-            sentiment = "Negativo"; stars = "⭐"
-        else:
-            sentiment = "Neutro"; stars = "⭐⭐⭐"
-        st.markdown(f"**Classificação:** {sentiment} {stars}")
+# === Análise Personalizada ===
+with tabs[4]:
+    st.subheader("Análise Personalizada de Sentimento")
+    user_input = st.text_area("Digite uma frase para análise:", placeholder="Exemplo: O serviço foi excelente!")
 
+    if user_input.strip():
+        doc = nlp(user_input)
+        with st.expander("Visualize a Árvore de Dependência"):
+            spacy_streamlit.visualize_parser(doc, title="Parser", key="parser_input")
+
+        score = semantic_sentiment(user_input)
+        st.divider()
+
+        if score > 0:
+            sentiment = "Positivo"
+            stars = "👍"
+            color = "#43aa8b"  
+        else:
+            sentiment = "Negativo"
+            stars = "👎"
+            color = "#e63946"  
+
+        st.markdown(
+            f"<span style='font-size:1.1em;color:{color};font-weight:600'>{sentiment} {stars}</span>",
+            unsafe_allow_html=True
+        )
+        st.markdown(
+            f"<span style='font-size:0.98em;color: #444;'>Score: {score:.2f}</span>",
+            unsafe_allow_html=True
+        )
